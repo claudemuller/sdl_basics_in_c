@@ -17,21 +17,30 @@ void game_init(void);
 void game_quit(void);
 void report_error(void);
 
-// Singleton in c if static keyword is used - globally defined Game "object"
+SDL_Texture* gfx_buildSpr(int w, int h, int** grid);
+void gfx_destroySpr(SDL_Texture* spr);
+
+void screen_drawSpr(SDL_Texture* spr, SDL_Rect* rect);
+
+// Globally defined Game "object"
 struct {
     // Define attributes
     SDL_bool running;
+
     struct {
         unsigned int w;
         unsigned int h;
         const char* name;
         SDL_Window* window;
         SDL_Renderer* renderer;
+        void (*drawSpr)(SDL_Texture* spr, SDL_Rect* rect);
     } screen;
 
     struct {
         unsigned int n;
         SDL_Surface** spritesheet;
+        SDL_Texture* (*buildSpr)(int w, int h, int** grid);
+        void (*destroySpr)(SDL_Texture* spr);
     } gfx;
 
     // define "methods"
@@ -44,11 +53,14 @@ struct {
         SCREEN_SCALE * SCREEN_H,
         SCREEN_NAME,
         NULL,
-        NULL
+        NULL,
+        screen_drawSpr
     },
     {
         0,
-        NULL
+        NULL,
+        gfx_buildSpr,
+        gfx_destroySpr
     },
     game_init,
     game_quit

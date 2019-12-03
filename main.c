@@ -4,12 +4,18 @@ int main(int argc, char* argv[]) {
     Game.init();
 
     int x = Game.screen.w / 2 - 8, y = Game.screen.h / 2 - 8;
-
     SDL_Rect rect = {0, 0, 8 * 2, 8 * 2};
-    SDL_Texture* texture1 = SDL_CreateTextureFromSurface(Game.screen.renderer, Game.gfx.spritesheet[17]);
-    SDL_Texture* texture2 = SDL_CreateTextureFromSurface(Game.screen.renderer, Game.gfx.spritesheet[18]);
-    SDL_Texture* texture3 = SDL_CreateTextureFromSurface(Game.screen.renderer, Game.gfx.spritesheet[29]);
-    SDL_Texture* texture4 = SDL_CreateTextureFromSurface(Game.screen.renderer, Game.gfx.spritesheet[30]);
+
+    int i, j;
+	int** grid = (int**) malloc(sizeof(int*)*2);
+	for(j=0; j<2; j++) {
+		grid[j] = (int*) malloc(sizeof(int)*2);
+		for(i=0; i<2; i++) {
+			grid[j][i] = 2;
+		}
+	}
+
+	SDL_Texture* spr = Game.gfx.buildSpr(2, 2, grid);
 
     SDL_Event event;
     while (Game.running) {
@@ -23,25 +29,13 @@ int main(int argc, char* argv[]) {
 
         SDL_RenderClear(Game.screen.renderer);
 
-        rect.x = 0 + x, rect.y = 0 + y;
-        SDL_RenderCopy(Game.screen.renderer, texture1, NULL, &rect);
-
-        rect.x = 8 * 2 + x, rect.y = 0 + y;
-        SDL_RenderCopy(Game.screen.renderer, texture2, NULL, &rect);
-
-        rect.x = 0 + x, rect.y = 8 * 2 + y;
-        SDL_RenderCopy(Game.screen.renderer, texture3, NULL, &rect);
-
-        rect.x = 8 * 2 + x, rect.y = 8 * 2 + y;
-        SDL_RenderCopy(Game.screen.renderer, texture4, NULL, &rect);
+        rect.x = 0+x, rect.y = 0+y;
+		Game.screen.drawSpr(spr, &rect);
 
         SDL_RenderPresent(Game.screen.renderer);
     }
 
-    SDL_DestroyTexture(texture1);
-    SDL_DestroyTexture(texture2);
-    SDL_DestroyTexture(texture3);
-    SDL_DestroyTexture(texture4);
+    Game.gfx.destroySpr(spr);
 
     Game.quit();
 
@@ -84,8 +78,6 @@ void game_init(void) {
         report_error();
     }
 
-    Game.running = SDL_TRUE;
-
     SDL_Surface* surface = SDL_LoadBMP("images/spritesheet.bmp");
     int n = ((surface->w / 8) * (surface->h / 8) + 1);
 
@@ -109,6 +101,8 @@ void game_init(void) {
     }
 
     SDL_FreeSurface(surface);
+
+    Game.running = SDL_TRUE;
 }
 
 void game_quit(void) {
@@ -116,6 +110,7 @@ void game_quit(void) {
     for (i = 0; i < Game.gfx.n; i++) {
         SDL_FreeSurface(Game.gfx.spritesheet[i]);
     }
+
     free(Game.gfx.spritesheet);
     Game.gfx.spritesheet = NULL;
 
@@ -128,4 +123,33 @@ void game_quit(void) {
     Game.running = SDL_FALSE;
 
     SDL_Quit();
+}
+
+SDL_Texture* gfx_buildSpr(int w, int h, int** grid) {
+	SDL_Surface* surface = SDL_CreateRGBSurface(0, 8*w, 8*h, 24, 0x00, 0x00, 0x00, 0x00);
+	SDL_SetColorKey(surface, 1, 0xFF00FF);
+	SDL_FillRect(surface, 0, 0xFF00FF);
+
+	int i, j;
+	SDL_Rect rect = {0, 0, 8, 8};
+	for(j=0; j<h; j++) {
+		for(i=0; i<w; i++) {
+			rect.x = i*8;
+			rect.y = j*8;
+			SDL_BlitSurface(Game.gfx.spritesheet[grid[j][i]], NULL, surface, &rect);
+		}
+	}
+
+	SDL_Texture* tex = SDL_CreateTextureFromSurface(Game.screen.renderer, surface);
+	SDL_FreeSurface(surface);
+
+	return tex;
+}
+
+void gfx_destroySpr(SDL_Texture* spr) {
+	SDL_DestroyTexture(spr);
+}
+
+void screen_drawSpr(SDL_Texture* spr, SDL_Rect* rect) {
+	SDL_RenderCopy(Game.screen.renderer, spr, NULL, rect);
 }
